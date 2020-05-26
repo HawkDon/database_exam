@@ -1,0 +1,27 @@
+version: "2.0"
+services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+  neo4j:
+    image: neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/password
+  postgres:
+    image: postgres
+    ports:
+      - "27018:5432"
+    environment:
+      - POSTGRES_PASSWORD=password
+  mongodb:
+    image: mongo
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_DATABASE=coursera
