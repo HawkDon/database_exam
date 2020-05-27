@@ -8,4 +8,4 @@ npm run nodemon & bg;
 
 cd ../Postgres4Exam;
 
-flask run & bg;
+python3 app.py & bg;
