@@ -6,6 +6,16 @@ var mongoClient = MongoClient(
     { useUnifiedTopology: true, useNewUrlParser: true }
 );
 
+var returnObj = {
+    status: "",
+    message: "",
+    data: {},
+    links: [],
+    meta: {
+        origin: "MongoDB"
+    }
+}
+
 var csvParser = require("./csv_converter");
 
 mongoClient.connect().then((client) => {
@@ -36,9 +46,16 @@ async function findById(req, res) {
         }, {}).toArray();
         
         if (result.length > 0) {
-            return res.send(JSON.stringify(result[0]));
+            returnObj.data = result[0];
+            returnObj.status = 200;
+            returnObj.message = "Success"
+            returnObj.links = [{href: "/api/v1/courses/" + req.params.id,
+                                rel: "courses",
+                                type: "GET"
+                                }]
+            return res.send(JSON.stringify(returnObj));
         } else {
-            return res.status(404).send(JSON.stringify({ message: "No Course with requested id" }));
+            return res.status(404).send(JSON.stringify({ status: 404, data: {}, message: "No Course with requested id" }));
         }
     } catch (e) {
         console.log(e)
@@ -55,12 +72,19 @@ async function deleteById(req, res) {
             _id: id
         }, {});
         if(result.value == null){
-            return res.status(404).send(JSON.stringify({ message: "No Course with requested id" }))
+            return res.status(404).send(JSON.stringify( {status: 404, data: {}, message: "No Course with requested id" } ) )
         }else{
-            return res.status(200).send(JSON.stringify({ message: "Successful deleted" }))
+            returnObj.data = {};
+            returnObj.status = 200;
+            returnObj.message = "Successful deleted"
+            returnObj.links = [{href: "/api/v1/courses/" + req.params.id,
+                                rel: "courses",
+                                type: "DELETE"
+                                }]
+            return res.status(200).send(JSON.stringify(returnObj));
         }
     }catch(e){
-        return res.status(500).send();
+        return res.status(500).send( {status: 500, data: {}, message: "Server Error" } );
     }
 }
 
@@ -76,13 +100,20 @@ async function updateById(req, res) {
             $set: body
         }, { returnOriginal: false } );
         if(await result.value == null){
-            return res.status(404).send( JSON.stringify({message: "No Course with requested id" }))
+            return res.status(404).send( JSON.stringify({status: 404, data: {}, message: "No Course with requested id" }))
         }else{
-            return res.status(200).send(JSON.stringify(result.value));
+            returnObj.data = result.value;
+            returnObj.status = 200;
+            returnObj.message = "Successful updated"
+            returnObj.links = [{href: "/api/v1/courses/" + req.params.id,
+                                rel: "courses",
+                                type: "PUT"
+                                }]
+            return res.status(200).send(JSON.stringify(returnObj));
         }
     } catch (e) {
         console.log(e)
-        return res.status(404).send()
+        return res.status(500).send({status: 500, data: {}, message: "Server Error" })
     }
 }
 
@@ -97,28 +128,25 @@ async function addDocument(req, res) {
     var collection = db.collection("courses");
     try {
         let cursor = await collection.insertOne(body)
-        console.log(cursor)
-        return res.status(201).send(JSON.stringify(await cursor.ops[0]));
+        returnObj.data = await cursor.ops[0];
+        returnObj.status = 201;
+        returnObj.message = "Successful added document"
+        returnObj.links = [{href: "/api/v1/courses/",
+                            rel: "courses",
+                            type: "POST"
+                            }]
+        return res.status(201).send(JSON.stringify(returnObj));
     } catch (e) {
         console.log(e.code);
         if (e.code == 11000) {
-            return res.status(400).send({ error: "Duplicate key for _id field" });
+            return res.status(400).send({status: 400, data: {}, message: "Duplicate key for _id field" } );
         } else {
-            return res.status(400).send({ error: "Something went wrong" });
+            return res.status(500).send({status: 500, data: {}, message: "Server Error" });
         }
     }
 }
 
-async function findAll(req, res) {
-    try{
-        var db = mongoClient.db("coursera");
-        var collection = db.collection("courses");
-        let result = await collection.find();
-        return res.send(JSON.stringify(await result.toArray()));
-    }catch(e){
-        return res.status(500).send({message: "Server Error"})
-    }
-}
+
 
 async function findCoursesWithParams(req,res){
     try{
@@ -165,13 +193,43 @@ async function findCoursesWithParams(req,res){
         console.log(await JSON.stringify(resultCursor.cursorState.cmd.query) )
         console.log(await resultCursor.cursorState.cmd.query)
         let result = await resultCursor.toArray();
-        return res.send(await result);
+
+        returnObj.data = await result;
+        returnObj.status = 200;
+        returnObj.message = "Successful collecting documents"
+        returnObj.links = [{href: "/api/v1/courses",
+                            rel: "courses",
+                            params: "price, tags, level",
+                            type: "GET"
+                            }]
+
+        return res.send(JSON.stringify(returnObj));
 
     }catch(e){
         console.log(e)
+        return res.status(500).send({status: 500, data: {}, message: "Server Error" });
     }
 }
 
+// DEPRECATED -> See findCoursesWithParams();-)
+/*
+async function findAll(req, res) {
+    try{
+        var db = mongoClient.db("coursera");
+        var collection = db.collection("courses");
+        let result = await collection.find();
+        returnObj.data = await result.toArray();
+        returnObj.status = 201;
+        returnObj.message = "Successful added document"
+        returnObj.links = [{href: "/api/v1/courses/",
+                            rel: "courses",
+                            type: "GET"
+                            }]
+        return res.send(JSON.stringify(returnObj));
+    }catch(e){
+        return res.status(500).send({message: "Server Error"})
+    }
+}
 
 async function findCoursesWithPrice(req, res) {
     //console.log('/courses?price')
@@ -250,32 +308,14 @@ async function findCountOfTags(req, res) {
     })
     return res.send(JSON.stringify(await result.slice(0, 10)));
 }
-
-function createLogJson(req, res) {
-    let request = {
-        headers: req.headers,
-        path: req.route.methods + " - " + req.route.path,
-        url: req.originalUrl,
-        body: req.body
-    }
-
-    let response = {
-        response: res
-    }
-    return JSON.stringify(request, response);
-}
+*/
 
 
 module.exports = {
     populateMongoDB: populateMongoDB,
     findById: findById,
-    findAll: findAll,
-    findCoursesWithTag: findCoursesWithTag,
-    findCoursesWithLevel: findCoursesWithLevel,
     deleteById: deleteById,
     updateById: updateById,
     addDocument: addDocument,
-    findCountOfTags: findCountOfTags,
-    findCoursesWithPrice: findCoursesWithPrice,
     findCoursesWithParams: findCoursesWithParams
 };
