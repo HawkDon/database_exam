@@ -1,11 +1,7 @@
 cd neo4jmicroservice;
 
-./gradlew bootRun & bg
+./gradlew build;
 
-cd ../Mongo4Exam;
+cd ..;
 
-npm run nodemon & bg;
-
-cd ../Postgres4Exam;
-
-python3 app.py & bg;
+docker-compose up;

@@ -6,12 +6,15 @@ import org.neo4j.driver.AuthTokens
 import org.neo4j.driver.Driver
 import org.neo4j.driver.GraphDatabase
 import org.springframework.stereotype.Component
+import java.io.BufferedReader
+import java.io.File
 import java.io.FileReader
+import java.io.InputStreamReader
 import java.util.*
 import javax.annotation.PostConstruct
 import kotlin.random.Random
 
-val driver: Driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "password"))
+val driver: Driver = GraphDatabase.driver("bolt://neo4j", AuthTokens.basic("neo4j", "password"))
 
 @Component
 class Database{
@@ -40,7 +43,7 @@ class Database{
 
     fun getRecordsFromCSVFile(): MutableList<Array<String>> {
         val records = mutableListOf<Array<String>>()
-        val csvReader = CSVReader(FileReader(javaClass.classLoader.getResource("init.csv").path))
+        val csvReader = CSVReader(BufferedReader(InputStreamReader(javaClass.classLoader.getResourceAsStream("init.csv"))))
 
         var values: Array<String>?
 

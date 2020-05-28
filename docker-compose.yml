@@ -1,4 +1,4 @@
-version: "2.0"
+version: "3"
 services:
   redis:
     image: redis
@@ -14,7 +14,7 @@ services:
   postgres:
     image: postgres
     ports:
-      - "27018:5432"
+      - "5432:5432"
     environment:
       - POSTGRES_PASSWORD=password
   mongodb:
@@ -25,3 +25,30 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=password
       - MONGO_INITDB_DATABASE=coursera
+  neo4jmicro:
+    build:
+      context: ./neo4jmicroservice
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - neo4j
+    restart: on-failure
+  mongodbmicro:
+    build:
+      context: ./Mongo4Exam
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    restart: on-failure
+  postgresmicro:
+    build:
+      context: ./Postgres4Exam
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+    restart: on-failure

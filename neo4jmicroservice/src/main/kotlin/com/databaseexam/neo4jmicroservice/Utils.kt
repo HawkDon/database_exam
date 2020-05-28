@@ -5,6 +5,10 @@ import com.databaseexam.neo4jmicroservice.nodes.*
 import org.neo4j.driver.Record
 import org.neo4j.driver.Result
 import org.neo4j.driver.Value
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+
 
 fun getAllSubjects(records: MutableList<Array<String>>) = records.map {
     val subjects: MutableList<String> = it[5].split(", ") as MutableList<String>
@@ -63,4 +67,24 @@ fun Record.createCourseDTO(): CourseDTO {
             institutions = this[2].toDTOList() { Institution(it["id"] as String, it["name"] as String) },
             tags = this[3].toDTOList { Subject(it["name"] as String) }
     )
+}
+
+fun getResourceAsFile(resourcePath: String?): File? {
+    return try {
+        val `in` = ClassLoader.getSystemClassLoader().getResourceAsStream(resourcePath) ?: return null
+        val tempFile: File = File.createTempFile(`in`.hashCode().toString(), ".tmp")
+        tempFile.deleteOnExit()
+        FileOutputStream(tempFile).use { out ->
+            //copy stream
+            val buffer = ByteArray(1024)
+            var bytesRead: Int
+            while (`in`.read(buffer).also { bytesRead = it } != -1) {
+                out.write(buffer, 0, bytesRead)
+            }
+        }
+        tempFile
+    } catch (e: IOException) {
+        e.printStackTrace()
+        null
+    }
 }
