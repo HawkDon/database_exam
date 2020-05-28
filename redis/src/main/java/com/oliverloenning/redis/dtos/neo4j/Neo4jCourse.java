@@ -8,6 +8,7 @@ public class Neo4jCourse {
     private String date;
     private Integer price;
 
+
     public String getId() {
         return id;
     }
