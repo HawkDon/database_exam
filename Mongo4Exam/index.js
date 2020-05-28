@@ -74,7 +74,12 @@ app.post('/api/' + version + '/courses/', function (req,res) {
     return mongo.addDocuments(req,res);
 });
 
-
+app.get('/api/'+ version + '/logs', function (req,res) {
+    console.log("hej")
+    console.log('GET /mongoLogs/')
+    res.setHeader('Content-Type', 'application/json');
+    return mongo.getLogs(req,res);
+});
 
 //  POST COURSE DOCUMENT
 app.post('/api/' + version + '/courses/', function (req,res) {

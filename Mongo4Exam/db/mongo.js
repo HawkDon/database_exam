@@ -1,8 +1,9 @@
-const { MongoClient, ObjectID } = require("mongodb");
+const { MongoClient, ObjectID, Logger } = require("mongodb");
+const assert = require('assert');
 
 var mongoClient = MongoClient(
-     "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
-  // "mongodb://admin:password@localhost:27017/", //LOCALHOST
+   //  "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
+   "mongodb://admin:password@localhost:27017/", //LOCALHOST
   { useUnifiedTopology: true, useNewUrlParser: true, retryWrites: false }
 );
 
@@ -22,6 +23,12 @@ mongoClient
   .connect()
   .then(() => {
     console.log("MongoDB connection fully alive");
+    Logger.setLevel('error');
+    Logger.filter('class', ['Db']);
+    var db = mongoClient.db("coursera");
+    db.command({ismaster:true}, function(err, d) {
+      assert.equal(null, err);
+    });
   })
   .catch((e) => {
     console.log("ERROR: " + e);
@@ -365,6 +372,14 @@ async function getDistinctTags(req, res) {
 }
 
 
+async function getLogs(req,res){
+  var db = mongoClient.db("coursera");
+  var result = await db.executeDbAdminCommand( { getLog: "global" } )
+  console.log(result)
+  return res.send(JSON.stringify({logs: await result}))
+}
+
+
 module.exports = {
   populateMongoDB: populateMongoDB,
   findById: findById,
@@ -374,7 +389,8 @@ module.exports = {
   findCoursesWithParams: findCoursesWithParams,
   getDistinctLevels: getDistinctLevels,
   getDistinctTags: getDistinctTags,
-  addDocuments: addDocuments
+  addDocuments: addDocuments,
+  getLogs: getLogs
 };
 
 
