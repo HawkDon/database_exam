@@ -1,9 +1,9 @@
-const { MongoClient, ObjectID, Logger } = require("mongodb");
-const assert = require("assert");
+const { MongoClient, ObjectID } = require("mongodb");
 
 var mongoClient = MongoClient(
-  "mongodb://admin:password@mongodb/", // localhost:27017 on local
-  { useUnifiedTopology: true, useNewUrlParser: true }
+     "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
+  // "mongodb://admin:password@localhost:27017/", //LOCALHOST
+  { useUnifiedTopology: true, useNewUrlParser: true, retryWrites: false }
 );
 
 var returnObj = {
@@ -20,7 +20,7 @@ var csvParser = require("./csv_converter");
 
 mongoClient
   .connect()
-  .then((client) => {
+  .then(() => {
     console.log("MongoDB connection fully alive");
   })
   .catch((e) => {
@@ -36,12 +36,14 @@ async function populateMongoDB() {
       console.log("Done populating DB");
     });
   } catch (e) {
+    console.log(e)
     return e;
   }
 }
 
 async function findById(req, res) {
   try {
+    const session = mongoClient.startSession();
     let id = req.params.id;
     var db = mongoClient.db("coursera");
     var collection = db.collection("courses");
@@ -170,6 +172,42 @@ async function updateById(req, res) {
   }
 }
 
+async function addDocuments(req, res) {
+  let courses = req.body.courses;
+  await courses.forEach((courses) => {
+    let newObjectId = new ObjectID().toHexString();
+    courses["_id"] = newObjectId;
+  })
+  try {
+    var db = mongoClient.db("coursera");
+    var collection = db.collection("courses");
+    var result = await collection.insertMany(await courses);
+    if (await result.insertedCount == courses.length) {
+      console.log(await result)
+      returnObj.data = {};
+      returnObj.status = 201;
+      returnObj.message = "Successful added documents";
+      returnObj.links = [
+        { href: "/api/v1/courses/", rel: "courses", type: "POST" },
+      ];
+      return res.status(201).send()
+    } else {
+      console.log(await result)
+      returnObj.data = {};
+      returnObj.status = 201;
+      returnObj.message = "Inserted some documents: " + insertedCount + "/" + courses.length;
+      returnObj.links = [
+        { href: "/api/v1/courses/", rel: "courses", type: "POST" },
+      ];
+      return res.status(201).send()
+    }
+
+  } catch (e) {
+    console.log(e)
+    return res.status(500).send({ status: 500, data: {}, message: "Server Error" });
+  }
+}
+
 async function addDocument(req, res) {
   let body = req.body;
   if (!body.hasOwnProperty("_id")) {
@@ -279,7 +317,72 @@ async function findCoursesWithParams(req, res) {
   }
 }
 
-// DEPRECATED -> See findCoursesWithParams();-)
+async function getDistinctLevels(req, res) {
+  try {
+    var db = mongoClient.db("coursera");
+    var collection = db.collection("courses");
+    let result = await collection.distinct("level");
+    returnObj.data = { levels: await result };
+    returnObj.status = 200;
+    returnObj.message = "Successful collected distinct levels";
+    returnObj.links = [
+      {
+        href: "/api/v1/courses/levels",
+        rel: "courses",
+        type: "GET",
+      },
+    ];
+    return res.status(200).send(JSON.stringify(returnObj));
+  } catch (e) {
+    return res
+      .status(500)
+      .send({ status: 500, data: {}, message: "Server Error" });
+  }
+}
+
+async function getDistinctTags(req, res) {
+  try {
+    var db = mongoClient.db("coursera");
+    var collection = db.collection("courses");
+    let result = await collection.distinct("tags");
+    console.log(result)
+    returnObj.data = { levels: await result };
+    returnObj.status = 200;
+    returnObj.message = "Successful collected distinct tags";
+    returnObj.links = [
+      {
+        href: "/api/v1/courses/tags",
+        rel: "courses",
+        type: "GET",
+      },
+    ];
+    return res.status(200).send(JSON.stringify(returnObj));
+  } catch (e) {
+    return res
+      .status(500)
+      .send({ status: 500, data: {}, message: "Server Error" });
+  }
+}
+
+
+module.exports = {
+  populateMongoDB: populateMongoDB,
+  findById: findById,
+  deleteById: deleteById,
+  updateById: updateById,
+  addDocument: addDocument,
+  findCoursesWithParams: findCoursesWithParams,
+  getDistinctLevels: getDistinctLevels,
+  getDistinctTags: getDistinctTags,
+  addDocuments: addDocuments
+};
+
+
+
+
+
+
+// DEPRECATED --> See findCoursesWithParams() ;-)
 /*
 async function findAll(req, res) {
     try{
@@ -377,12 +480,3 @@ async function findCountOfTags(req, res) {
     return res.send(JSON.stringify(await result.slice(0, 10)));
 }
 */
-
-module.exports = {
-  populateMongoDB: populateMongoDB,
-  findById: findById,
-  deleteById: deleteById,
-  updateById: updateById,
-  addDocument: addDocument,
-  findCoursesWithParams: findCoursesWithParams,
-};
