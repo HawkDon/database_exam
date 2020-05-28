@@ -10,11 +10,11 @@ interface DataLayer<T> {
 
     fun getAll(): List<T>
 
-    fun createOne(course: T): ResponseEntity<HttpStatus>
+    fun createOne(courseDTO: T): ResponseEntity<HttpStatus>
 
-    fun readOne(title: String): T
+    fun readOne(id: String): T
 
-    fun updateOne(course: T): ResponseEntity<HttpStatus>
+    fun updateOne(courseDTO: T): ResponseEntity<HttpStatus>
 
     fun deleteOne(id: String): ResponseEntity<HttpStatus>
 

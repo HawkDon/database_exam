@@ -6,4 +6,5 @@ data class Course(
         val audited: Int,
         val date: String,
         val price: Int
+
 )

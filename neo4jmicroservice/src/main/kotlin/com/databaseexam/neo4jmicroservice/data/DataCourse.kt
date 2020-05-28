@@ -1,11 +1,10 @@
 package com.databaseexam.neo4jmicroservice.data
 
+import com.databaseexam.neo4jmicroservice.*
+import com.databaseexam.neo4jmicroservice.dto.CourseDTO
 import com.databaseexam.neo4jmicroservice.enums.Operation
-import com.databaseexam.neo4jmicroservice.getListOfCourses
 import com.databaseexam.neo4jmicroservice.interfaces.DataLayer
-import com.databaseexam.neo4jmicroservice.nodes.Course
-import com.databaseexam.neo4jmicroservice.query
-import com.databaseexam.neo4jmicroservice.toCourse
+import com.databaseexam.neo4jmicroservice.nodes.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
@@ -14,40 +13,114 @@ import java.util.*
 
 
 @Component
-class DataCourse  : DataLayer<Course> {
-    override fun getAll(): List<Course> {
-        val result = query("""MATCH (c:Course) return c""")
-        val courses = getListOfCourses(result);
+class DataCourse  : DataLayer<CourseDTO> {
+    override fun getAll(): List<CourseDTO> {
+        val result = query("""
+        MATCH (course:Course)-[:INSTRUCTED_BY]-(instructor:Instructor)
+        WITH course as course, collect(instructor) AS instructors
+        MATCH (course)-[:COURSE_AT]->(institution:Institution)
+        WITH course, instructors, collect(institution) AS institutions
+        MATCH (course)-[:SUBJECT_OF]->(subject:Subject)
+        WITH course, instructors, institutions, collect(subject) as subjects
+        MATCH (course)-[:HAS_LEVEL]->(difficulty:Difficulty)
+        return course, instructors, institutions, subjects, difficulty
+        """.trimIndent())
+
+        val courses = mutableListOf<CourseDTO>()
+        while(result.hasNext()) {
+            val record = result.next()
+            val courseDTO = record.createCourseDTO()
+            courses.add(courseDTO)
+        }
         return courses
     }
 
 
-    override fun createOne(course: Course): ResponseEntity<HttpStatus> {
-        query("""CREATE (c:Course {id: "${UUID.randomUUID()}",
-                |name: "${course.name}", 
-                |participants: "${course.participants}",
-                |audited: "${course.audited}",
-                |date: "${course.date}",
-                |price: "${course.price}"})""".trimMargin())
+    override fun createOne(courseDTO: CourseDTO): ResponseEntity<HttpStatus> {
+        val result = query("""CREATE (c:Course {id: "${UUID.randomUUID()}",
+                |name: "${courseDTO.course.name}", 
+                |participants: "${courseDTO.course.participants}",
+                |audited: "${courseDTO.course.audited}",
+                |date: "${courseDTO.course.date}",
+                |price: "${courseDTO.course.price}"}) return c""".trimMargin())
+
+        val course = result.next()[0].asMap().toCourse()
+
+        for (instructor in courseDTO.instructors) {
+            query("""MATCH (c:Course {id: "${course.id}"})
+            |MERGE c-[:INSTRUCTED_BY]->(i:Instructor {id: "${instructor.id}"})
+        """.trimMargin())
+        }
+        for (institution in courseDTO.institutions) {
+            query("""MATCH (c:Course {id: "${course.id}"})
+            |MERGE c-[:COURSE_AT]->(i:institution {id: "${institution.id}"})
+        """.trimMargin())
+        }
+
+        for (subject in courseDTO.tags) {
+            query("""MATCH (c:Course {id: "${course.id}"})
+            |MERGE c-[:SUBJECT_OF]->(s:Subject {name: "${subject.name}"})
+        """.trimMargin())
+        }
+
+        query("""MATCH (c:Course {id: "${course.id}"})
+            |MERGE c-[:HAS_LEVEL]->(d:Difficulty {name: "${courseDTO.difficulty.name}"})
+        """.trimMargin())
         return ResponseEntity(HttpStatus.CREATED)
     }
 
-    override fun readOne(title: String): Course {
-        val result = query("""MATCH (c:Course) WHERE c.name = "$title" return c""")
-        val course = result.next()[0].asMap().toCourse()
-        return course
+    override fun readOne(id: String): CourseDTO {
+        val result = query("""
+        MATCH (course:Course {id: "$id" })-[:INSTRUCTED_BY]-(instructor:Instructor)
+        WITH course as course, collect(instructor) AS instructors
+        MATCH (course)-[:COURSE_AT]->(institution:Institution)
+        WITH course, instructors, collect(institution) AS institutions
+        MATCH (course)-[:SUBJECT_OF]->(subject:Subject)
+        WITH course, instructors, institutions, collect(subject) as subjects
+        MATCH (course)-[:HAS_LEVEL]->(difficulty:Difficulty)
+        return course, instructors, institutions, subjects, difficulty
+        """.trimIndent())
+        val record = result.next()
+        val courseDTO = record.createCourseDTO()
+        return courseDTO
     }
 
-    override fun updateOne(course: Course): ResponseEntity<HttpStatus> {
+    override fun updateOne(courseDTO: CourseDTO): ResponseEntity<HttpStatus> {
         try {
             query("""
-                |MATCH (c:Course {id: "${course.id}" })
-                |SET c.name = "${course.name}"
-                |SET c.participants = "${course.participants}"
-                |SET c.audited = "${course.audited}"
-                |SET c.date = "${course.date}"
-                |SET c.price = "${course.price}"
+                |MATCH (c:Course {id: "${courseDTO.course.id}" })
+                |SET c.name = "${courseDTO.course.name}"
+                |SET c.participants = "${courseDTO.course.participants}"
+                |SET c.audited = "${courseDTO.course.audited}"
+                |SET c.date = "${courseDTO.course.date}"
+                |SET c.price = "${courseDTO.course.price}"
             """.trimMargin())
+
+            query("""
+                |MATCH (c:Course {id: "${courseDTO.course.id}" })-[:HAS_LEVEL]->(d:Difficulty)
+                |SET d.name = "${courseDTO.difficulty.name}"
+            """.trimMargin())
+
+            for (instructor in courseDTO.instructors) {
+                query("""
+                |MATCH (:Course {id: "${courseDTO.course.id}" })-[:INSTRUCTED_BY]->(i:Instructor {id: "${instructor.id}"})
+                |SET i.name = "${instructor.name}"
+            """.trimMargin())
+            }
+
+            for (institution in courseDTO.institutions) {
+                query("""
+                |MATCH (:Course {id: "${courseDTO.course.id}" })-[:COURSE_AT]->(i:Institution {id: "${institution.id}"})
+                |SET i.name = "${institution.name}"
+            """.trimMargin())
+            }
+
+            for (subject in courseDTO.tags) {
+                query("""
+                |MATCH (:Course {id: "${courseDTO.course.id}" })-[:SUBJECT_OF]->(s:Subject {name: "${subject.name}"})
+                |SET i.name = "${subject.name}"
+            """.trimMargin())
+            }
         } catch (e: Exception) {
             return ResponseEntity(HttpStatus.BAD_REQUEST)
         }
@@ -56,14 +129,14 @@ class DataCourse  : DataLayer<Course> {
 
     override fun deleteOne(id: String): ResponseEntity<HttpStatus> {
         try {
-            query("""MATCH (c:Course) WHERE c.id = "$id" DELETE c""")
+            query("""MATCH (c:Course)-[rel]->() WHERE c.id = "$id" DELETE c, rel""")
         } catch (e: Exception) {
             return ResponseEntity(HttpStatus.BAD_REQUEST)
         }
         return ResponseEntity(HttpStatus.OK)
     }
 
-    fun filter(tags: List<String>?, level: String?, price: Int?, operator: Operation?): List<Course> {
+    fun filter(tags: List<String>?, level: String?, price: Int?, operator: Operation?): List<CourseDTO> {
         var query = "MATCH (course:Course)-[:SUBJECT_OF]->(subject:Subject) " +
                 "WITH course, subject " +
                 "MATCH (course)-[:HAS_LEVEL]->(difficulty:Difficulty) " +
@@ -108,9 +181,22 @@ class DataCourse  : DataLayer<Course> {
             }
 
         }
-        val result = query(query + "RETURN course")
+        val result = query(query + "MATCH (course)-[:INSTRUCTED_BY]-(instructor:Instructor)\n" +
+                "WITH course, collect(instructor) AS instructors\n" +
+                "MATCH (course)-[:COURSE_AT]->(institution:Institution)\n" +
+                "WITH course, instructors, collect(institution) AS institutions\n" +
+                "MATCH (course)-[:SUBJECT_OF]->(subject:Subject)\n" +
+                "WITH course, instructors, institutions, collect(subject) as subjects\n" +
+                "MATCH (course)-[:HAS_LEVEL]->(difficulty:Difficulty)\n" +
+                "return course, instructors, institutions, subjects, difficulty")
 
-        return getListOfCourses(result)
+        val courses = mutableListOf<CourseDTO>()
+        while(result.hasNext()) {
+            val record = result.next()
+            val courseDTO = record.createCourseDTO()
+            courses.add(courseDTO)
+        }
+        return courses
     }
 }
 

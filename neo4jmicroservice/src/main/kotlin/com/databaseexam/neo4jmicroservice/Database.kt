@@ -147,7 +147,7 @@ class Database{
                 val databaseInstitution = Institution(id = record["id"] as String, name = record["name"] as String)
                 query("""
                     MATCH (instructor:Instructor {id: "${instructor.id}"}), (institution:Institution {id: "${databaseInstitution.id}"})
-                    CREATE (instructor)-[:TEACHES_AT]->(institution)
+                    MERGE (instructor)-[:TEACHES_AT]->(institution)
                 """.trimIndent())
             }
 
@@ -166,7 +166,7 @@ class Database{
                 val databaseSubject = Subject(name = record["name"] as String)
                 query("""
                     MATCH (instructor:Instructor {id: "${instructor.id}"}), (subject:Subject {name: "${databaseSubject.name}"})
-                    CREATE (instructor)-[:TEACHES]->(subject)
+                    MERGE (instructor)-[:TEACHES]->(subject)
                 """.trimIndent())
             }
         }
@@ -188,7 +188,7 @@ class Database{
                 val databaseInstructor = Instructor(id = record["id"] as String, name = record["name"] as String)
                 query("""
                 MATCH (course:Course {id: "${course.id}"}), (instructor:Instructor {id: "${databaseInstructor.id}"})
-                CREATE (course)-[:INSTRUCTED_BY]->(instructor)
+                MERGE (course)-[:INSTRUCTED_BY]->(instructor)
                 """.trimIndent())
             }
 
@@ -206,7 +206,7 @@ class Database{
                 val databaseSubject = Subject(name = record["name"] as String)
                 query("""
                 MATCH (course:Course {id: "${course.id}"}), (subject:Subject {name: "${databaseSubject.name}"})
-                CREATE (course)-[:SUBJECT_OF]->(subject)
+                MERGE (course)-[:SUBJECT_OF]->(subject)
                 """.trimIndent())
             }
 
@@ -216,7 +216,7 @@ class Database{
 
             query("""
                 MATCH (course:Course {id: "${course.id}"}), (difficulty:Difficulty {name: "${randomDifficulty.name}"})
-                CREATE (course)-[:HAS_LEVEL]->(difficulty)
+                MERGE (course)-[:HAS_LEVEL]->(difficulty)
                 """.trimIndent())
 
 
@@ -228,7 +228,7 @@ class Database{
 
             query("""
                 MATCH (course:Course {id: "${course.id}"}), (institution:Institution {id: "${institutionFromNeo4j.id}"})
-                CREATE (course)-[:COURSE_AT]->(institution)
+                MERGE (course)-[:COURSE_AT]->(institution)
                 """.trimIndent())
         }
     }

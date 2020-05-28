@@ -1,7 +1,10 @@
 package com.databaseexam.neo4jmicroservice
 
-import com.databaseexam.neo4jmicroservice.nodes.Course
+import com.databaseexam.neo4jmicroservice.dto.CourseDTO
+import com.databaseexam.neo4jmicroservice.nodes.*
+import org.neo4j.driver.Record
 import org.neo4j.driver.Result
+import org.neo4j.driver.Value
 
 fun getAllSubjects(records: MutableList<Array<String>>) = records.map {
     val subjects: MutableList<String> = it[5].split(", ") as MutableList<String>
@@ -33,4 +36,31 @@ fun MutableMap<String, Any>.toCourse(): Course {
             price = this["price"].toString().toInt()
     )
     return course
+}
+
+fun MutableMap<String, Any>.toDifficulty(): Difficulty {
+    val course = Difficulty(
+            name = this["name"] as String
+    )
+    return course
+}
+
+fun <T> Value.toDTOList(cb: (MutableMap<String, Any>) -> T): MutableList<T> {
+    val listOfDTOs = mutableListOf<T>()
+    for (i in 0 until this.size()) {
+        val result = this[i].asMap()
+        val dto = cb(result)
+        listOfDTOs.add(dto as T)
+    }
+    return listOfDTOs
+}
+
+fun Record.createCourseDTO(): CourseDTO {
+    return CourseDTO(
+            this[0].asMap().toCourse(),
+            this[4].asMap().toDifficulty(),
+            instructors = this[1].toDTOList() {Instructor(it["id"] as String, it["name"] as String)},
+            institutions = this[2].toDTOList() { Institution(it["id"] as String, it["name"] as String) },
+            tags = this[3].toDTOList { Subject(it["name"] as String) }
+    )
 }
