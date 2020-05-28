@@ -8,6 +8,17 @@ public class Neo4jCourse {
     private String date;
     private Integer price;
 
+    public Neo4jCourse() {
+    }
+
+    public Neo4jCourse(String id, String name, Integer participants, Integer audited, String date, Integer price) {
+        this.id = id;
+        this.name = name;
+        this.participants = participants;
+        this.audited = audited;
+        this.date = date;
+        this.price = price;
+    }
 
     public String getId() {
         return id;

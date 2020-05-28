@@ -1,27 +1,26 @@
 package com.oliverloenning.redis.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oliverloenning.redis.Constants;
 import com.oliverloenning.redis.Utils;
 import com.oliverloenning.redis.dtos.RedisCourse;
-import com.oliverloenning.redis.dtos.mongodb.MongoDBCourse;
 import com.oliverloenning.redis.dtos.mongodb.MongoDBDTOResponse;
-import com.oliverloenning.redis.dtos.neo4j.Neo4jCourse;
-import com.oliverloenning.redis.dtos.neo4j.Neo4jCourseDTO;
+import com.oliverloenning.redis.dtos.neo4j.*;
 import com.oliverloenning.redis.dtos.postgres.PostgresCourse;
 import com.oliverloenning.redis.enums.Operation;
 import com.oliverloenning.redis.interfaces.CService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,17 +38,35 @@ public class CourseService implements CService {
         List<Neo4jCourseDTO> neo4jCourses = om.readValue(neo4jJson, new TypeReference<List<Neo4jCourseDTO>>(){});
         MongoDBDTOResponse mongoDBCourses = om.readValue(mongodbJson, MongoDBDTOResponse.class);
         List<PostgresCourse> postgresCourses = om.readValue(postgresQLJson, new TypeReference<List<PostgresCourse>>(){});
-        List<RedisCourse> pCourses = postgresCourses.stream().map(postgresCourse -> new RedisCourse(Integer.toString(postgresCourse.getId()), postgresCourse.getTitle(), postgresCourse.getPrice())).collect(Collectors.toList());
-        List<RedisCourse> mCourses = mongoDBCourses.getData().stream().map(mongoDBCourse -> new RedisCourse(mongoDBCourse.get_id(), mongoDBCourse.getName(), mongoDBCourse.getPrice())).collect(Collectors.toList());
-        List<RedisCourse> nCourses = neo4jCourses.stream().map(neo4jCourse -> new RedisCourse(neo4jCourse.getCourse().getId(), neo4jCourse.getCourse().getName(), neo4jCourse.getCourse().getPrice())).collect(Collectors.toList());
+        List<RedisCourse> pCourses = Utils.convertFromPostgresCourseToRedisCourseList(postgresCourses);
+        List<RedisCourse> mCourses = Utils.convertFromMongoCourseToRedisCourseList(mongoDBCourses);
+        List<RedisCourse> nCourses = Utils.convertFromNeo4jCourseToRedisCourseList(neo4jCourses);
         return Stream.of(mCourses, pCourses, nCourses).flatMap(Collection::stream).collect(Collectors.toList());
     }
 
+    @PostMapping("/course")
     @Override
-    public ResponseEntity<HttpStatus> createCourse(RedisCourse course, Operation operation) {
-        switch(operation) {
+    public ResponseEntity<HttpStatus> createCourse(@RequestBody RedisCourse course) throws IOException {
+        switch(course.getDatabase()) {
             case NEO4J: {
+                Neo4jCourse neo4jCourse = new Neo4jCourse("-1",
+                        course.getTitle(),
+                        course.getParticipants(),
+                        0,
+                        "20/20/2000",
+                        new Random().nextInt(100)
+                        );
+                Neo4jDifficulty diff = new Neo4jDifficulty(course.getLevel());
+                List<Neo4jInstitution> institutions = course.getInstitutions().stream().map(neo4jInstitution -> new Neo4jInstitution(neo4jInstitution.getId(), neo4jInstitution.getName())).collect(Collectors.toList());
+                List<Neo4jInstructor> instructors = course.getInstructors().stream().map(neo4jInstructor -> new Neo4jInstructor(neo4jInstructor.getId(), neo4jInstructor.getName())).collect(Collectors.toList());
 
+                List<Neo4jSubject> tags = course.getTags().stream().map(Neo4jSubject::new).collect(Collectors.toList());
+                Neo4jCourseDTO neo4jCourseDTO = new Neo4jCourseDTO(neo4jCourse, diff, institutions, instructors, tags);
+                Integer statusCode = Utils.sendResource(Constants.NEO4J_RESOURCE + "/course", "POST", om.writeValueAsBytes(neo4jCourseDTO));
+                if(statusCode == 201) {  // created
+                    return new ResponseEntity<HttpStatus>(HttpStatus.CREATED);
+                }
+                return new ResponseEntity<HttpStatus>(HttpStatus.BAD_REQUEST);
             }
             case MONGODB: {
 
@@ -61,14 +78,6 @@ public class CourseService implements CService {
                 System.out.println("Database does not exist!");
             }
         }
-        return null;
-    }
-
-    @GetMapping("/course")
-    @Override
-    public RedisCourse readCourse(@RequestParam("id") String id) throws IOException {
-        String json = Utils.requestResource(Constants.NEO4J_RESOURCE + "/course?title=" + Utils.cascadeString(id));
-        Neo4jCourse c = om.readValue(json, Neo4jCourse.class);
         return null;
     }
 
