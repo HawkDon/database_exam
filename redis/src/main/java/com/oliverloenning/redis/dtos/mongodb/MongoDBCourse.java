@@ -1,5 +1,6 @@
 package com.oliverloenning.redis.dtos.mongodb;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MongoDBCourse {
@@ -8,9 +9,17 @@ public class MongoDBCourse {
     public String url;
     public Integer price;
     public String level;
-    public List<String> Tags;
+    public List<String> Tags = new ArrayList<>();
 
     public MongoDBCourse() {
+    }
+
+    public MongoDBCourse(String _id, String name, String url, Integer price, String level) {
+        this._id = _id;
+        this.name = name;
+        this.url = url;
+        this.price = price;
+        this.level = level;
     }
 
     public MongoDBCourse(String _id, String name, String url, Integer price, String level, List<String> tags) {

@@ -1,11 +1,14 @@
 package com.oliverloenning.redis.dtos;
 
-import com.oliverloenning.redis.dtos.neo4j.Neo4jInstitution;
-import com.oliverloenning.redis.dtos.neo4j.Neo4jInstructor;
+import com.oliverloenning.redis.dtos.mongodb.MongoDBCourse;
+import com.oliverloenning.redis.dtos.neo4j.*;
+import com.oliverloenning.redis.dtos.postgres.PostgresCourse;
 import com.oliverloenning.redis.enums.Operation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 public class RedisCourse {
     private String id;
@@ -118,4 +121,45 @@ public class RedisCourse {
         this.level = level;
     }
 
+    public Neo4jCourseDTO toNeo4jCourseDTO() {
+        Neo4jCourse neo4jCourse = new Neo4jCourse(this.getId(),
+                this.getTitle(),
+                this.getParticipants(),
+                0,
+                "20/20/2000",
+                new Random().nextInt(100)
+        );
+        Neo4jDifficulty diff = new Neo4jDifficulty(this.getLevel());
+        List<Neo4jInstitution> institutions = this.getInstitutions().stream().map(neo4jInstitution -> new Neo4jInstitution(neo4jInstitution.getId(), neo4jInstitution.getName())).collect(Collectors.toList());
+        List<Neo4jInstructor> instructors = this.getInstructors().stream().map(neo4jInstructor -> new Neo4jInstructor(neo4jInstructor.getId(), neo4jInstructor.getName())).collect(Collectors.toList());
+
+        List<Neo4jSubject> tags = this.getTags().stream().map(Neo4jSubject::new).collect(Collectors.toList());
+
+        return new Neo4jCourseDTO(neo4jCourse, diff, institutions, instructors, tags);
+    }
+
+    public MongoDBCourse toMongoDBCourse() {
+        return new MongoDBCourse(
+                this.getId(),
+                this.getTitle(),
+                this.getUrl(),
+                this.getPrice(),
+                this.getLevel()
+        );
+    }
+
+    public PostgresCourse toPostgresCourse() {
+        return new PostgresCourse(Integer.parseInt(this.getId()),
+                this.getTitle(),
+                this.getUrl(),
+                false,
+                this.getPrice(),
+                this.getParticipants(),
+                0,
+                0,
+                "",
+                this.getLevel(),
+                this.tags
+                );
+    }
 }

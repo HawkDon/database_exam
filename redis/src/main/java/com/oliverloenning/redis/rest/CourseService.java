@@ -1,12 +1,13 @@
 package com.oliverloenning.redis.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oliverloenning.redis.Constants;
 import com.oliverloenning.redis.Utils;
 import com.oliverloenning.redis.dtos.RedisCourse;
+import com.oliverloenning.redis.dtos.mongodb.MongoDBBodyDTO;
+import com.oliverloenning.redis.dtos.mongodb.MongoDBCourse;
 import com.oliverloenning.redis.dtos.mongodb.MongoDBDTOResponse;
 import com.oliverloenning.redis.dtos.neo4j.*;
 import com.oliverloenning.redis.dtos.postgres.PostgresCourse;
@@ -15,12 +16,10 @@ import com.oliverloenning.redis.interfaces.CService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import javax.websocket.server.PathParam;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,45 +48,75 @@ public class CourseService implements CService {
     public ResponseEntity<HttpStatus> createCourse(@RequestBody RedisCourse course) throws IOException {
         switch(course.getDatabase()) {
             case NEO4J: {
-                Neo4jCourse neo4jCourse = new Neo4jCourse("-1",
-                        course.getTitle(),
-                        course.getParticipants(),
-                        0,
-                        "20/20/2000",
-                        new Random().nextInt(100)
-                        );
-                Neo4jDifficulty diff = new Neo4jDifficulty(course.getLevel());
-                List<Neo4jInstitution> institutions = course.getInstitutions().stream().map(neo4jInstitution -> new Neo4jInstitution(neo4jInstitution.getId(), neo4jInstitution.getName())).collect(Collectors.toList());
-                List<Neo4jInstructor> instructors = course.getInstructors().stream().map(neo4jInstructor -> new Neo4jInstructor(neo4jInstructor.getId(), neo4jInstructor.getName())).collect(Collectors.toList());
-
-                List<Neo4jSubject> tags = course.getTags().stream().map(Neo4jSubject::new).collect(Collectors.toList());
-                Neo4jCourseDTO neo4jCourseDTO = new Neo4jCourseDTO(neo4jCourse, diff, institutions, instructors, tags);
+                Neo4jCourseDTO neo4jCourseDTO = course.toNeo4jCourseDTO();
                 Integer statusCode = Utils.sendResource(Constants.NEO4J_RESOURCE + "/course", "POST", om.writeValueAsBytes(neo4jCourseDTO));
-                if(statusCode == 201) {  // created
-                    return new ResponseEntity<HttpStatus>(HttpStatus.CREATED);
-                }
-                return new ResponseEntity<HttpStatus>(HttpStatus.BAD_REQUEST);
+                return Utils.sendStatusCode(statusCode);
             }
             case MONGODB: {
-
+                MongoDBBodyDTO body = new MongoDBBodyDTO();
+                MongoDBCourse mongoDBCourse = course.toMongoDBCourse();
+                body.getCourses().add(mongoDBCourse);
+                Integer statusCode = Utils.sendResource(Constants.MONGODB_RESOURCE + "/courses", "POST", om.writeValueAsBytes(body));
+                return Utils.sendStatusCode(statusCode);
             }
             case POSTGRESQL: {
-
+                PostgresCourse postgresCourse = course.toPostgresCourse();
+                Integer statusCode = Utils.sendResource(Constants.POSTGRESQL_RESOURCE + "/courses", "POST", om.writeValueAsBytes(postgresCourse));
+                return Utils.sendStatusCode(statusCode);
             }
             default: {
                 System.out.println("Database does not exist!");
+                return Utils.sendStatusCode(404);
             }
         }
-        return null;
     }
 
+    @PutMapping("/course")
     @Override
-    public ResponseEntity<HttpStatus> updateCourse(RedisCourse course) {
-        return null;
+    public ResponseEntity<HttpStatus> updateCourse(RedisCourse course) throws IOException {
+        switch(course.getDatabase()) {
+            case NEO4J: {
+                Neo4jCourseDTO neo4jCourseDTO = course.toNeo4jCourseDTO();
+                Integer statusCode = Utils.sendResource(Constants.NEO4J_RESOURCE + "/course", "PUT", om.writeValueAsBytes(neo4jCourseDTO));
+                return Utils.sendStatusCode(statusCode);
+            }
+            case MONGODB: {
+                MongoDBCourse mongoDBCourse = course.toMongoDBCourse();
+                Integer statusCode = Utils.sendResource(Constants.MONGODB_RESOURCE + "/courses/" + mongoDBCourse.get_id(), "PUT", om.writeValueAsBytes(mongoDBCourse));
+                return Utils.sendStatusCode(statusCode);
+            }
+            case POSTGRESQL: {
+                PostgresCourse postgresCourse = course.toPostgresCourse();
+                Integer statusCode = Utils.sendResource(Constants.POSTGRESQL_RESOURCE + "/courses", "PUT", om.writeValueAsBytes(postgresCourse));
+                return Utils.sendStatusCode(statusCode);
+            }
+            default: {
+                System.out.println("Database does not exist!");
+                return Utils.sendStatusCode(404);
+            }
+        }
     }
 
+    @DeleteMapping("/course")
     @Override
-    public ResponseEntity<HttpStatus> deleteCourse(String id) {
-        return null;
+    public ResponseEntity<HttpStatus> deleteCourse(@PathParam("id") String id, @PathParam("database") Operation database) throws IOException {
+        switch(database) {
+            case NEO4J: {
+                Integer statusCode = Utils.deleteResource(Constants.NEO4J_RESOURCE + "/course?id=" + id);
+                return Utils.sendStatusCode(statusCode);
+            }
+            case MONGODB: {
+                Integer statusCode = Utils.deleteResource(Constants.MONGODB_RESOURCE + "/courses/" + id);
+                return Utils.sendStatusCode(statusCode);
+            }
+            case POSTGRESQL: {
+                Integer statusCode = Utils.deleteResource(Constants.POSTGRESQL_RESOURCE + "/courses/" + Integer.parseInt(id));
+                return Utils.sendStatusCode(statusCode);
+            }
+            default: {
+                System.out.println("Database does not exist!");
+                return Utils.sendStatusCode(404);
+            }
+        }
     }
 }
