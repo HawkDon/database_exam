@@ -4,11 +4,23 @@ import java.util.List;
 
 public class MongoDBCourse {
     public String _id;
-    public String Name;
-    public String Url;
-    public Integer Price;
-    public String Level;
+    public String name;
+    public String url;
+    public Integer price;
+    public String level;
     public List<String> Tags;
+
+    public MongoDBCourse() {
+    }
+
+    public MongoDBCourse(String _id, String name, String url, Integer price, String level, List<String> tags) {
+        this._id = _id;
+        this.name = name;
+        this.url = url;
+        this.price = price;
+        this.level = level;
+        this.Tags = tags;
+    }
 
     public String get_id() {
         return _id;
@@ -19,35 +31,35 @@ public class MongoDBCourse {
     }
 
     public String getName() {
-        return Name;
+        return name;
     }
 
     public void setName(String Name) {
-        this.Name = Name;
+        this.name = Name;
     }
 
     public String getUrl() {
-        return Url;
+        return url;
     }
 
     public void setUrl(String Url) {
-        this.Url = Url;
+        this.url = Url;
     }
 
     public Integer getPrice() {
-        return Price;
+        return price;
     }
 
     public void setPrice(Integer Price) {
-        this.Price = Price;
+        this.price = Price;
     }
 
     public String getLevel() {
-        return Level;
+        return level;
     }
 
     public void setLevel(String Level) {
-        this.Level = Level;
+        this.level = Level;
     }
 
     public List<String> getTags() {
