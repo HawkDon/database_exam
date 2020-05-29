@@ -37,7 +37,7 @@ class Course(Resource):
         help = 'No number_reviews provided', location = 'json')
         self.reqparse.add_argument('number_of_lectures', type = int, required = True,
         help = 'No number_of_lectures provided', location = 'json')
-        self.reqparse.add_argument('duration', type = float, required = True,
+        self.reqparse.add_argument('duration', type = str, required = True,
         help = 'No duration provided', location = 'json')
         self.reqparse.add_argument('level', type = int, required = True,
         help = 'No level provided', location = 'json')
@@ -45,7 +45,6 @@ class Course(Resource):
         args = self.reqparse.parse_args()
         #print(json.dumps(self.reqparse.parse_args()), flush=True)
         return myfunctions.putSingleCourse(args,id)
-
 
     def delete(self,id):
         return myfunctions.deleteSingleCourse(id)
@@ -70,7 +69,7 @@ class CoursePost(Resource):
         help = 'No number_reviews provided', location = 'json')
         self.reqparse.add_argument('number_of_lectures', type = int, required = True,
         help = 'No number_of_lectures provided', location = 'json')
-        self.reqparse.add_argument('duration', type = float, required = True,
+        self.reqparse.add_argument('duration', type = str, required = True,
         help = 'No duration provided', location = 'json')
         self.reqparse.add_argument('level', type = int, required = True,
         help = 'No level provided', location = 'json')

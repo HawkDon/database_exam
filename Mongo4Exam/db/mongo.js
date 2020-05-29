@@ -2,7 +2,7 @@ const { MongoClient, ObjectID, Logger } = require("mongodb");
 const assert = require('assert');
 
 var mongoClient = MongoClient(
-       "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
+     "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
     // "mongodb://admin:password@localhost:27017/", //LOCALHOST
   { useUnifiedTopology: true, useNewUrlParser: true}
 );
@@ -37,6 +37,31 @@ mongoClient
 async function populateMongoDB() {
   try {
     var db = mongoClient.db("coursera");
+    db.createCollection( "courses", {
+      validator: { $jsonSchema: {
+         bsonType: "object",
+         required: [ "name", "url", "level","price"],
+         properties: {
+            name: {
+               bsonType: "string",
+               description: "must be a string and is required"
+            },
+            url: {
+               bsonType : "string",
+               description: "must be a string and match the regular expression pattern"
+            },
+            level: {
+               bsonType: "string",
+               description: "must be a string and is required"
+            },
+            price: {
+              bsonType: "int",
+              description: "must be a string"
+           }
+         }
+      } },
+      validationAction: "error"
+    } )
     var collection = db.collection("courses");
     let results = csvParser.loadCsv();
     collection.insertMany(await results, function (err, resultDocuments) {
@@ -47,6 +72,9 @@ async function populateMongoDB() {
     return e;
   }
 }
+
+
+
 
 async function findById(req, res) {
   try {
