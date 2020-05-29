@@ -1,10 +1,10 @@
 const { MongoClient, ObjectID, Logger } = require("mongodb");
-const assert = require('assert');
+const assert = require("assert");
 
 var mongoClient = MongoClient(
-    // "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
-     "mongodb://admin:password@localhost:27017/", //LOCALHOST
-  { useUnifiedTopology: true, useNewUrlParser: true}
+  "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
+  // "mongodb://admin:password@localhost:27017/", //LOCALHOST
+  { useUnifiedTopology: true, useNewUrlParser: true }
 );
 
 var returnObj = {
@@ -23,10 +23,10 @@ mongoClient
   .connect()
   .then(() => {
     console.log("MongoDB connection fully alive");
-    Logger.setLevel('error');
-    Logger.filter('class', ['Db']);
+    Logger.setLevel("error");
+    Logger.filter("class", ["Db"]);
     var db = mongoClient.db("coursera");
-    db.command({ismaster:true}, function(err, d) {
+    db.command({ ismaster: true }, function (err, d) {
       assert.equal(null, err);
     });
   })
@@ -37,45 +37,45 @@ mongoClient
 async function populateMongoDB() {
   try {
     var db = mongoClient.db("coursera");
-    db.createCollection( "courses", {
-      validator: { $jsonSchema: {
-         bsonType: "object",
-         required: [ "name", "url", "level","price"],
-         properties: {
+    db.createCollection("courses", {
+      validator: {
+        $jsonSchema: {
+          bsonType: "object",
+          required: ["name", "url", "level", "price"],
+          properties: {
             name: {
-               bsonType: "string",
-               description: "must be a string and is required"
+              bsonType: "string",
+              description: "must be a string and is required",
             },
             url: {
-               bsonType : "string",
-               description: "must be a string and match the regular expression pattern"
+              bsonType: "string",
+              description:
+                "must be a string and match the regular expression pattern",
             },
             level: {
-               bsonType: "string",
-               description: "must be a string and is required"
+              bsonType: "string",
+              description: "must be a string and is required",
             },
             price: {
               bsonType: "int",
-              description: "must be a string"
-           }
-         }
-      } },
-      validationAction: "error"
-    } )
+              description: "must be a string",
+            },
+          },
+        },
+      },
+      validationAction: "error",
+    });
     var collection = db.collection("courses");
     let results = csvParser.loadCsv();
     collection.insertMany(await results, function (err, resultDocuments) {
-      console.log(err)
+      console.log(err);
       console.log("Done populating DB");
     });
   } catch (e) {
-    console.log(e)
+    console.log(e);
     return e;
   }
 }
-
-
-
 
 async function findById(req, res) {
   try {
@@ -105,15 +105,13 @@ async function findById(req, res) {
       ];
       return res.send(JSON.stringify(returnObj));
     } else {
-      return res
-        .status(404)
-        .send(
-          JSON.stringify({
-            status: 404,
-            data: {},
-            message: "No Course with requested id",
-          })
-        );
+      return res.status(404).send(
+        JSON.stringify({
+          status: 404,
+          data: {},
+          message: "No Course with requested id",
+        })
+      );
     }
   } catch (e) {
     console.log(e);
@@ -133,15 +131,13 @@ async function deleteById(req, res) {
       {}
     );
     if (result.value == null) {
-      return res
-        .status(404)
-        .send(
-          JSON.stringify({
-            status: 404,
-            data: {},
-            message: "No Course with requested id",
-          })
-        );
+      return res.status(404).send(
+        JSON.stringify({
+          status: 404,
+          data: {},
+          message: "No Course with requested id",
+        })
+      );
     } else {
       returnObj.data = {};
       returnObj.status = 200;
@@ -178,15 +174,13 @@ async function updateById(req, res) {
       { returnOriginal: false }
     );
     if ((await result.value) == null) {
-      return res
-        .status(404)
-        .send(
-          JSON.stringify({
-            status: 404,
-            data: {},
-            message: "No Course with requested id",
-          })
-        );
+      return res.status(404).send(
+        JSON.stringify({
+          status: 404,
+          data: {},
+          message: "No Course with requested id",
+        })
+      );
     } else {
       returnObj.data = result.value;
       returnObj.status = 200;
@@ -213,34 +207,36 @@ async function addDocuments(req, res) {
   await courses.forEach((courses) => {
     let newObjectId = new ObjectID().toHexString();
     courses["_id"] = newObjectId;
-  })
+  });
   try {
     var db = mongoClient.db("coursera");
     var collection = db.collection("courses");
     var result = await collection.insertMany(await courses);
-    if (await result.insertedCount == courses.length) {
-      console.log(await result)
+    if ((await result.insertedCount) == courses.length) {
+      console.log(await result);
       returnObj.data = {};
       returnObj.status = 201;
       returnObj.message = "Successful added documents";
       returnObj.links = [
         { href: "/api/v1/courses/", rel: "courses", type: "POST" },
       ];
-      return res.status(201).send()
+      return res.status(201).send();
     } else {
-      console.log(await result)
+      console.log(await result);
       returnObj.data = {};
       returnObj.status = 201;
-      returnObj.message = "Inserted some documents: " + insertedCount + "/" + courses.length;
+      returnObj.message =
+        "Inserted some documents: " + insertedCount + "/" + courses.length;
       returnObj.links = [
         { href: "/api/v1/courses/", rel: "courses", type: "POST" },
       ];
-      return res.status(201).send()
+      return res.status(201).send();
     }
-
   } catch (e) {
-    console.log(e)
-    return res.status(500).send({ status: 500, data: {}, message: "Server Error" });
+    console.log(e);
+    return res
+      .status(500)
+      .send({ status: 500, data: {}, message: "Server Error" });
   }
 }
 
@@ -265,13 +261,11 @@ async function addDocument(req, res) {
   } catch (e) {
     console.log(e.code);
     if (e.code == 11000) {
-      return res
-        .status(400)
-        .send({
-          status: 400,
-          data: {},
-          message: "Duplicate key for _id field",
-        });
+      return res.status(400).send({
+        status: 400,
+        data: {},
+        message: "Duplicate key for _id field",
+      });
     } else {
       return res
         .status(500)
@@ -398,14 +392,12 @@ async function getDistinctTags(req, res) {
   }
 }
 
-
-async function getLogs(req,res){
+async function getLogs(req, res) {
   var db = mongoClient.db("coursera");
-  var result = await db.executeDbAdminCommand( { getLog: "global" } )
+  var result = await db.executeDbAdminCommand({ getLog: "global" });
   //console.log(result)
-  return res.send(JSON.stringify({logs: await result}))
+  return res.send(JSON.stringify({ logs: await result }));
 }
-
 
 module.exports = {
   populateMongoDB: populateMongoDB,
@@ -417,11 +409,8 @@ module.exports = {
   getDistinctLevels: getDistinctLevels,
   getDistinctTags: getDistinctTags,
   addDocuments: addDocuments,
-  getLogs: getLogs
+  getLogs: getLogs,
 };
-
-
-
 
 // DEPRECATED --> See findCoursesWithParams() ;-)
 /*
