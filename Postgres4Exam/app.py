@@ -93,7 +93,7 @@ class CourseGetAll(Resource):
         help = 'No level provided', location = 'args')
         self.reqparse.add_argument('price', type = int, required = False,
         help = 'No price provided', location = 'args')
-        self.reqparse.add_argument('comparator', type = str, required = False,
+        self.reqparse.add_argument('operator', type = str, required = False,
         help = 'No comparator provided', location = 'args')
         args = self.reqparse.parse_args()
         return myfunctions.getCourses(args)

@@ -13,7 +13,7 @@ def getCourses(args):
         conn = connector.connect2DB()
         cursor = conn.cursor()
         #GET ALL
-        if (args.tags is None and args.level is None and args.price is None and args.comparator is None):
+        if (args.tags is None and args.level is None and args.price is None and args.operator is None):
             cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
@@ -23,7 +23,7 @@ def getCourses(args):
                            )
         #GET PRICE
         elif (args.tags is None and args.level is None and args.price is not None):
-            if(args.comparator is None):
+            if(args.operator is None):
                 cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
@@ -31,7 +31,7 @@ def getCourses(args):
                             JOIN coursesschema.level on coursesschema.level.id = courses.level
                             WHERE coursesschema.courses.price = %s''', [args.price]
                            )
-            elif('lessThan' in args.comparator):
+            elif('lessThan' in args.operator):
                 cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
@@ -39,7 +39,7 @@ def getCourses(args):
                             JOIN coursesschema.level on coursesschema.level.id = courses.level
                             WHERE coursesschema.courses.price < %s''', [args.price]
                            )
-            elif('greaterThan' in args.comparator):
+            elif('greaterThan' in args.operator):
                 cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
@@ -49,7 +49,7 @@ def getCourses(args):
                            )
          
         #GET LEVEL
-        elif (args.tags is None and args.level is not None and args.price is None and args.comparator is None):
+        elif (args.tags is None and args.level is not None and args.price is None and args.operator is None):
             cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
@@ -59,7 +59,7 @@ def getCourses(args):
                            )
         
         #GET TAG
-        elif (args.tags is not None and args.level is None and args.price is None and args.comparator is None):
+        elif (args.tags is not None and args.level is None and args.price is None and args.operator is None):
             cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
