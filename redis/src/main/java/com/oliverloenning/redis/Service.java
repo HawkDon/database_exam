@@ -4,5 +4,9 @@ import redis.clients.jedis.Jedis;
 
 
 public class Service {
-    final static Jedis jedis = new Jedis();
+    final private static Jedis jedis = new Jedis();
+
+    public static Jedis getJedis() {
+        return jedis;
+    }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oliverloenning.redis.Constants;
+import com.oliverloenning.redis.Service;
 import com.oliverloenning.redis.Utils;
 import com.oliverloenning.redis.dtos.RedisCourse;
 import com.oliverloenning.redis.dtos.mongodb.MongoDBBodyDTO;
@@ -17,10 +18,11 @@ import com.oliverloenning.redis.interfaces.CService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Transaction;
 import javax.websocket.server.PathParam;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
@@ -128,6 +130,7 @@ public class CourseService implements CService {
     @Override
     public List<RedisCourse> getFilteredRedisCourses(@RequestParam(value = "tags", required = false) List<String> tags, @RequestParam(value = "level", required = false) String level, @RequestParam(value = "price", required = false) Integer price, @RequestParam(value = "operation", required = false) Operator operator) throws IOException {
         StringBuilder sb = new StringBuilder();
+        Jedis jedis = Service.getJedis();
         if(tags != null) {
             sb.append("tags=");
             for (int i = 0; i < tags.size(); i++) {
@@ -156,16 +159,26 @@ public class CourseService implements CService {
             }
             sb.append("operation=" + operator);
         }
-        String neo4jJson = Utils.requestResource(Constants.NEO4J_RESOURCE + "/courses/filter?" + sb.toString().replace("\"", ""));
-        List<Neo4jCourseDTO> neo4jCourses = om.readValue(neo4jJson, new TypeReference<List<Neo4jCourseDTO>>(){});
-        List<RedisCourse> nCourses = Utils.convertFromNeo4jCourseToRedisCourseList(neo4jCourses);
-        String mongodbJson = Utils.requestResource(Constants.MONGODB_RESOURCE + "/api/v1/courses?" + sb.toString().replace("\"", ""));
-        MongoDBDTOResponse mongoDBCourses = om.readValue(mongodbJson, MongoDBDTOResponse.class);
-        List<RedisCourse> mCourses = Utils.convertFromMongoCourseToRedisCourseList(mongoDBCourses);
-        String postgresQLJson = Utils.requestResource(Constants.POSTGRESQL_RESOURCE + "/courses?" + sb.toString().replace("\"", ""));
-        List<PostgresCourse> postgresCourses = om.readValue(postgresQLJson, new TypeReference<List<PostgresCourse>>(){});
-        List<RedisCourse> pCourses = Utils.convertFromPostgresCourseToRedisCourseList(postgresCourses);
-        return Stream.of(mCourses, nCourses, pCourses).flatMap(Collection::stream).collect(Collectors.toList());
+        String query = sb.toString().replace("\"", "");
+        if(jedis.exists(query)) {
+            return om.readValue(jedis.get(query), new TypeReference<List<RedisCourse>>(){});
+        } else {
+            Transaction procedure = jedis.multi();
+            String neo4jJson = Utils.requestResource(Constants.NEO4J_RESOURCE + "/courses/filter?" + query);
+            List<Neo4jCourseDTO> neo4jCourses = om.readValue(neo4jJson, new TypeReference<List<Neo4jCourseDTO>>(){});
+            List<RedisCourse> nCourses = Utils.convertFromNeo4jCourseToRedisCourseList(neo4jCourses);
+            String mongodbJson = Utils.requestResource(Constants.MONGODB_RESOURCE + "/api/v1/courses?" + query);
+            MongoDBDTOResponse mongoDBCourses = om.readValue(mongodbJson, MongoDBDTOResponse.class);
+            List<RedisCourse> mCourses = Utils.convertFromMongoCourseToRedisCourseList(mongoDBCourses);
+            String postgresQLJson = Utils.requestResource(Constants.POSTGRESQL_RESOURCE + "/courses?" + query);
+            List<PostgresCourse> postgresCourses = om.readValue(postgresQLJson, new TypeReference<List<PostgresCourse>>(){});
+            List<RedisCourse> pCourses = Utils.convertFromPostgresCourseToRedisCourseList(postgresCourses);
+            List<RedisCourse> combinedList =  Stream.of(mCourses, nCourses, pCourses).flatMap(Collection::stream).collect(Collectors.toList());
+            procedure.set(query, om.writeValueAsString(combinedList));
+            procedure.expire(query, 300);
+            procedure.exec();
+            return combinedList;
+        }
     }
 
 }
