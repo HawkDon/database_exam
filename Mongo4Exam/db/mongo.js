@@ -2,8 +2,8 @@ const { MongoClient, ObjectID, Logger } = require("mongodb");
 const assert = require('assert');
 
 var mongoClient = MongoClient(
-     "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
-    // "mongodb://admin:password@localhost:27017/", //LOCALHOST
+    // "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
+     "mongodb://admin:password@localhost:27017/", //LOCALHOST
   { useUnifiedTopology: true, useNewUrlParser: true}
 );
 
@@ -65,6 +65,7 @@ async function populateMongoDB() {
     var collection = db.collection("courses");
     let results = csvParser.loadCsv();
     collection.insertMany(await results, function (err, resultDocuments) {
+      console.log(err)
       console.log("Done populating DB");
     });
   } catch (e) {
@@ -300,13 +301,11 @@ async function findCoursesWithParams(req, res) {
     }
 
     if (req.query.tags != undefined) {
-      console.log(req.query.tags);
       let arr = req.query.tags.split(",");
       arr.forEach((element) => {
         tags.push(element);
       });
       mongo_operator_tag = "$in";
-      console.log(tags);
     }
 
     if (req.query.level != undefined) {
@@ -327,8 +326,8 @@ async function findCoursesWithParams(req, res) {
         { level: { [mongo_operator_level]: level } },
       ],
     });
-    console.log(await JSON.stringify(resultCursor.cursorState.cmd.query));
-    console.log(await resultCursor.cursorState.cmd.query);
+    //console.log(await JSON.stringify(resultCursor.cursorState.cmd.query));
+    //console.log(await resultCursor.cursorState.cmd.query);
     let result = await resultCursor.toArray();
 
     returnObj.data = await result;
@@ -380,7 +379,7 @@ async function getDistinctTags(req, res) {
     var db = mongoClient.db("coursera");
     var collection = db.collection("courses");
     let result = await collection.distinct("tags");
-    console.log(result)
+    //console.log(result)
     returnObj.data = { levels: await result };
     returnObj.status = 200;
     returnObj.message = "Successful collected distinct tags";
@@ -403,7 +402,7 @@ async function getDistinctTags(req, res) {
 async function getLogs(req,res){
   var db = mongoClient.db("coursera");
   var result = await db.executeDbAdminCommand( { getLog: "global" } )
-  console.log(result)
+  //console.log(result)
   return res.send(JSON.stringify({logs: await result}))
 }
 
@@ -420,8 +419,6 @@ module.exports = {
   addDocuments: addDocuments,
   getLogs: getLogs
 };
-
-
 
 
 
