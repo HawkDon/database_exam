@@ -16,6 +16,20 @@ public class PostgresCourse {
     private String level;
     private List<String> tags;
 
+    public PostgresCourse(int id, String title, String url, Boolean paid, Integer price, Integer number_subscribers, Integer number_reviews, Integer number_of_lectures, String duration, String level, List<String> tags) {
+        this.id = id;
+        this.title = title;
+        this.url = url;
+        this.paid = paid;
+        this.price = price;
+        this.number_subscribers = number_subscribers;
+        this.number_reviews = number_reviews;
+        this.number_of_lectures = number_of_lectures;
+        this.duration = duration;
+        this.level = level;
+        this.tags = tags;
+    }
+
     public int getId() {
         return id;
     }

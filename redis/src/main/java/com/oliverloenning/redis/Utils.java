@@ -9,6 +9,7 @@ import com.oliverloenning.redis.dtos.neo4j.Neo4jSubject;
 import com.oliverloenning.redis.dtos.postgres.PostgresCourse;
 import com.oliverloenning.redis.enums.Operation;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -59,6 +60,14 @@ public class Utils {
         return con.getResponseCode();
     }
 
+    public static Integer deleteResource(String resource) throws IOException {
+        URL url = new URL(resource);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("DELETE");
+
+        return con.getResponseCode();
+    }
+
     public static List<RedisCourse> convertFromMongoCourseToRedisCourseList(MongoDBDTOResponse mongoDBCourses) {
         return mongoDBCourses.getData().stream().map(mongoDBCourse -> {
             RedisCourse redisCourse = new RedisCourse(mongoDBCourse.get_id(), mongoDBCourse.getName(), mongoDBCourse.getPrice(), mongoDBCourse.getTags(), mongoDBCourse.getLevel(), Operation.MONGODB);
@@ -86,4 +95,19 @@ public class Utils {
                     return redisCourse;
         }).collect(Collectors.toList());
     }
+
+    public static ResponseEntity<HttpStatus> sendStatusCode(Integer statusCode) {
+        switch (statusCode) {
+            case 200: { // OK
+                return new ResponseEntity<HttpStatus>(HttpStatus.OK);
+            }
+            case 201: { // CREATED
+                return new ResponseEntity<HttpStatus>(HttpStatus.CREATED);
+            }
+            default: { // EVERYTHING ELSE
+                return new ResponseEntity<HttpStatus>(HttpStatus.BAD_REQUEST);
+            }
+        }
+    }
+
 }

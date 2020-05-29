@@ -13,7 +13,7 @@ public interface CService {
 
     public List<RedisCourse> getAllCourses() throws IOException;
     public ResponseEntity<HttpStatus> createCourse(RedisCourse course) throws IOException;
-    public ResponseEntity<HttpStatus> updateCourse(RedisCourse course);
-    public ResponseEntity<HttpStatus> deleteCourse(String id);
+    public ResponseEntity<HttpStatus> updateCourse(RedisCourse course) throws IOException;
+    public ResponseEntity<HttpStatus> deleteCourse(String id, Operation database) throws IOException;
 
 }
