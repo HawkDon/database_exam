@@ -1,6 +1,6 @@
 cd neo4jmicroservice;
 
-./gradlew build;
+./gradlew build -x test;
 
 cd ../redis;
 
