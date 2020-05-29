@@ -4,4 +4,4 @@ cd neo4jmicroservice;
 
 cd ..;
 
-docker-compose up;
+docker-compose up --build;

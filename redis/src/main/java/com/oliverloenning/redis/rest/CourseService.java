@@ -19,6 +19,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import javax.websocket.server.PathParam;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -123,12 +126,12 @@ public class CourseService implements CService {
 
     @GetMapping("/courses/filter")
     @Override
-    public List<RedisCourse> getFilteredRedisCourses(@RequestParam("tags") List<String> tags, @RequestParam("level") String level, @RequestParam("price") Integer price, @RequestParam("operation") Operator operator) throws IOException {
+    public List<RedisCourse> getFilteredRedisCourses(@RequestParam(value = "tags", required = false) List<String> tags, @RequestParam(value = "level", required = false) String level, @RequestParam(value = "price", required = false) Integer price, @RequestParam(value = "operation", required = false) Operator operator) throws IOException {
         StringBuilder sb = new StringBuilder();
         if(tags != null) {
             sb.append("tags=");
             for (int i = 0; i < tags.size(); i++) {
-                sb.append(tags.get(i) + ",");
+                sb.append(URLEncoder.encode(tags.get(i), StandardCharsets.UTF_8) + ",");
             }
             sb.deleteCharAt(sb.length() - 1);
         }
@@ -153,13 +156,16 @@ public class CourseService implements CService {
             }
             sb.append("operation=" + operator);
         }
-        System.out.println(sb.toString());
-        String neo4jJson = Utils.requestResource(Constants.NEO4J_RESOURCE + "/courses/filter?" + sb.toString());
+        String neo4jJson = Utils.requestResource(Constants.NEO4J_RESOURCE + "/courses/filter?" + sb.toString().replace("\"", ""));
         List<Neo4jCourseDTO> neo4jCourses = om.readValue(neo4jJson, new TypeReference<List<Neo4jCourseDTO>>(){});
         List<RedisCourse> nCourses = Utils.convertFromNeo4jCourseToRedisCourseList(neo4jCourses);
-       // String mongodbJson = Utils.requestResource(Constants.MONGODB_RESOURCE + "/api/v1/courses");
-       // String postgresQLJson = Utils.requestResource(Constants.POSTGRESQL_RESOURCE + "/courses");
-        return nCourses;
+        String mongodbJson = Utils.requestResource(Constants.MONGODB_RESOURCE + "/api/v1/courses?" + sb.toString().replace("\"", ""));
+        MongoDBDTOResponse mongoDBCourses = om.readValue(mongodbJson, MongoDBDTOResponse.class);
+        List<RedisCourse> mCourses = Utils.convertFromMongoCourseToRedisCourseList(mongoDBCourses);
+        String postgresQLJson = Utils.requestResource(Constants.POSTGRESQL_RESOURCE + "/courses?" + sb.toString().replace("\"", ""));
+        List<PostgresCourse> postgresCourses = om.readValue(postgresQLJson, new TypeReference<List<PostgresCourse>>(){});
+        List<RedisCourse> pCourses = Utils.convertFromPostgresCourseToRedisCourseList(postgresCourses);
+        return Stream.of(mCourses, nCourses, pCourses).flatMap(Collection::stream).collect(Collectors.toList());
     }
 
 }
