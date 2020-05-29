@@ -130,7 +130,7 @@ def postSingleCourse(args):
         conn = connector.connect2DB()
         cursor = conn.cursor()
         result = cursor.execute('CALL coursesschema.insert_course(%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-        [ str(args.title), str(args.url), args.paid, args.price, args.number_subscribers, args.number_reviews, args.number_of_lectures, args.level , args.duration ] )
+        [ str(args.title), str(args.url), args.paid, args.price, args.number_subscribers, args.number_reviews, args.number_of_lectures, args.level , float(args.duration) ] )
         conn.commit()
         #print(result, flush=True)
         return {'status': 201}, 201
@@ -147,7 +147,7 @@ def putSingleCourse(args,id):
         conn = connector.connect2DB()
         cursor = conn.cursor()
         cursor.execute('CALL coursesschema.update_course(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-        [id, args.title, args.url, args.paid, args.price, args.number_subscribers, args.number_reviews, args.number_of_lectures, args.duration, args.level])
+        [id, args.title, args.url, args.paid, args.price, args.number_subscribers, args.number_reviews, args.number_of_lectures, float(args.duration), args.level])
         conn.commit()
         #print(result, flush=True)
         return {'status': 204}, 204
