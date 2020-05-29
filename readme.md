@@ -6,6 +6,16 @@ Made by
 - Oliver Scholz Lønning - cph-ol31@cphbusiness.dk
 - Mathias Brinkmann Igel - cph-mi73@cphbusiness.dk
 
+
+### Prerequisites
+- [Docker](https://www.docker.com/get-started)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [NodeJS](https://nodejs.org/en/)
+- [Python3](https://www.python.org/download/releases/3.0/)
+- [Bash](https://www.gnu.org/software/bash/)
+- [Java 11+](https://www.oracle.com/java/technologies/javase-downloads.html)
+
+
 ### Launch the project:
 
 ./start.sh  
