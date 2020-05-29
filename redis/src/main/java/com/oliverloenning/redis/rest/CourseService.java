@@ -12,6 +12,7 @@ import com.oliverloenning.redis.dtos.mongodb.MongoDBDTOResponse;
 import com.oliverloenning.redis.dtos.neo4j.*;
 import com.oliverloenning.redis.dtos.postgres.PostgresCourse;
 import com.oliverloenning.redis.enums.Operation;
+import com.oliverloenning.redis.enums.Operator;
 import com.oliverloenning.redis.interfaces.CService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -119,4 +120,46 @@ public class CourseService implements CService {
             }
         }
     }
+
+    @GetMapping("/courses/filter")
+    @Override
+    public List<RedisCourse> getFilteredRedisCourses(@RequestParam("tags") List<String> tags, @RequestParam("level") String level, @RequestParam("price") Integer price, @RequestParam("operation") Operator operator) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        if(tags != null) {
+            sb.append("tags=");
+            for (int i = 0; i < tags.size(); i++) {
+                sb.append(tags.get(i) + ",");
+            }
+            sb.deleteCharAt(sb.length() - 1);
+        }
+
+        if(level != null) {
+            if(sb.length() != 0) {
+                sb.append("&");
+            }
+            sb.append("level=" + level);
+        }
+
+        if(price != null) {
+            if(sb.length() != 0) {
+                sb.append("&");
+            }
+            sb.append("price=" + price);
+        }
+
+        if(operator != null) {
+            if(sb.length() != 0) {
+                sb.append("&");
+            }
+            sb.append("operation=" + operator);
+        }
+        System.out.println(sb.toString());
+        String neo4jJson = Utils.requestResource(Constants.NEO4J_RESOURCE + "/courses/filter?" + sb.toString());
+        List<Neo4jCourseDTO> neo4jCourses = om.readValue(neo4jJson, new TypeReference<List<Neo4jCourseDTO>>(){});
+        List<RedisCourse> nCourses = Utils.convertFromNeo4jCourseToRedisCourseList(neo4jCourses);
+       // String mongodbJson = Utils.requestResource(Constants.MONGODB_RESOURCE + "/api/v1/courses");
+       // String postgresQLJson = Utils.requestResource(Constants.POSTGRESQL_RESOURCE + "/courses");
+        return nCourses;
+    }
+
 }
