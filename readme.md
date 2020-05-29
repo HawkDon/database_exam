@@ -1,10 +1,10 @@
 # Database exam project
 
 Made by
-- Mikkel Hansen
-- Mathias Jensenius
-- Mathias Igel
-- Oliver Lønning
+- Mikkel Lindstrøm Hansen - cph-mh643@cphbusiness.dk
+- Mathias Bartels Jensenius - cph-mj561@cphbusiness.dk
+- Oliver Scholz Lønning - cph-ol31@cphbusiness.dk
+- Mathias Brinkmann Igel - cph-mi73@cphbusiness.dk
 
 ### Launch the project:
 
