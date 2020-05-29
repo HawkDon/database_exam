@@ -2,9 +2,9 @@ const { MongoClient, ObjectID, Logger } = require("mongodb");
 const assert = require('assert');
 
 var mongoClient = MongoClient(
-   //  "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
-   "mongodb://admin:password@localhost:27017/", //LOCALHOST
-  { useUnifiedTopology: true, useNewUrlParser: true, retryWrites: false }
+       "mongodb://admin:password@mongodb/", // localhost:27017 on local // DOCKER
+    // "mongodb://admin:password@localhost:27017/", //LOCALHOST
+  { useUnifiedTopology: true, useNewUrlParser: true}
 );
 
 var returnObj = {
