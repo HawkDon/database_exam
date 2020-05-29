@@ -12,6 +12,7 @@ def getCourses(args):
     try:
         conn = connector.connect2DB()
         cursor = conn.cursor()
+
         #GET ALL
         if (args.tags is None and args.level is None and args.price is None and args.operator is None):
             cursor.execute('''
@@ -60,12 +61,13 @@ def getCourses(args):
         
         #GET TAG
         elif (args.tags is not None and args.level is None and args.price is None and args.operator is None):
+            tagArray = args.tags.split(',')
             cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
                             JOIN coursesschema.courses on coursesschema.courses.id = coursesschema.coursesandsubject.course_id
                             JOIN coursesschema.level on coursesschema.level.id = courses.level
-                            WHERE coursesschema.subject.title = %s''', [args.tags]
+                            WHERE coursesschema.subject.title = %s''', [tagArray[0]]
                            )
 
     except (psycopg2.Error) as error :
