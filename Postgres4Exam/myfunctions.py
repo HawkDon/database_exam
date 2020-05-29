@@ -13,7 +13,7 @@ def getCourses(args):
         conn = connector.connect2DB()
         cursor = conn.cursor()
         #GET ALL
-        if (args.tag is None and args.level is None and args.price is None and args.comparator is None):
+        if (args.tags is None and args.level is None and args.price is None and args.comparator is None):
             cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
@@ -22,7 +22,7 @@ def getCourses(args):
                             '''
                            )
         #GET PRICE
-        elif (args.tag is None and args.level is None and args.price is not None):
+        elif (args.tags is None and args.level is None and args.price is not None):
             if(args.comparator is None):
                 cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
@@ -49,7 +49,7 @@ def getCourses(args):
                            )
          
         #GET LEVEL
-        elif (args.tag is None and args.level is not None and args.price is None and args.comparator is None):
+        elif (args.tags is None and args.level is not None and args.price is None and args.comparator is None):
             cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
@@ -59,13 +59,13 @@ def getCourses(args):
                            )
         
         #GET TAG
-        elif (args.tag is not None and args.level is None and args.price is None and args.comparator is None):
+        elif (args.tags is not None and args.level is None and args.price is None and args.comparator is None):
             cursor.execute('''
                             SELECT coursesschema.courses.*, coursesschema.level.title as levelname, coursesschema.subject.title as tag FROM coursesschema.subject 
                             JOIN coursesschema.coursesandsubject on coursesschema.coursesandsubject.subject_id = coursesschema.subject.id
                             JOIN coursesschema.courses on coursesschema.courses.id = coursesschema.coursesandsubject.course_id
                             JOIN coursesschema.level on coursesschema.level.id = courses.level
-                            WHERE coursesschema.subject.title = %s''', [args.tag]
+                            WHERE coursesschema.subject.title = %s''', [args.tags]
                            )
 
     except (psycopg2.Error) as error :

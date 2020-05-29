@@ -87,8 +87,8 @@ class CourseGetAll(Resource):
         super(CourseGetAll, self).__init__()
     
     def get(self):
-        self.reqparse.add_argument('tag', type = str, required = False,
-        help = 'No tag provided', location = 'args')
+        self.reqparse.add_argument('tags', type = str, required = False,
+        help = 'No tags provided', location = 'args')
         self.reqparse.add_argument('level', type = str, required = False,
         help = 'No level provided', location = 'args')
         self.reqparse.add_argument('price', type = int, required = False,
