@@ -277,7 +277,7 @@ async function findCoursesWithParams(req, res) {
       arr.forEach((element) => {
         tags.push(element);
       });
-      mongo_operator_tag = "$all";
+      mongo_operator_tag = "$in";
       console.log(tags);
     }
 
