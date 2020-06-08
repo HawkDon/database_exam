@@ -131,6 +131,8 @@ public class CourseService implements CService {
     public List<RedisCourse> getFilteredRedisCourses(@RequestParam(value = "tags", required = false) List<String> tags, @RequestParam(value = "level", required = false) String level, @RequestParam(value = "price", required = false) Integer price, @RequestParam(value = "operation", required = false) Operator operator) throws IOException {
         StringBuilder sb = new StringBuilder();
         Jedis jedis = Service.getJedis();
+
+
         if(tags != null) {
             sb.append("tags=");
             for (int i = 0; i < tags.size(); i++) {
@@ -170,13 +172,16 @@ public class CourseService implements CService {
             String mongodbJson = Utils.requestResource(Constants.MONGODB_RESOURCE + "/api/v1/courses?" + query);
             MongoDBDTOResponse mongoDBCourses = om.readValue(mongodbJson, MongoDBDTOResponse.class);
             List<RedisCourse> mCourses = Utils.convertFromMongoCourseToRedisCourseList(mongoDBCourses);
+            /*
             String postgresQLJson = Utils.requestResource(Constants.POSTGRESQL_RESOURCE + "/courses?" + query);
             List<PostgresCourse> postgresCourses = om.readValue(postgresQLJson, new TypeReference<List<PostgresCourse>>(){});
             List<RedisCourse> pCourses = Utils.convertFromPostgresCourseToRedisCourseList(postgresCourses);
+             */
             List<RedisCourse> combinedList =  Stream.of(mCourses, nCourses, pCourses).flatMap(Collection::stream).collect(Collectors.toList());
             procedure.set(query, om.writeValueAsString(combinedList));
             procedure.expire(query, 300);
             procedure.exec();
+            procedure.close();
             return combinedList;
         }
     }
