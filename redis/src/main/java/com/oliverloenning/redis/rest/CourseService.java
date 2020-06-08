@@ -177,7 +177,7 @@ public class CourseService implements CService {
             List<PostgresCourse> postgresCourses = om.readValue(postgresQLJson, new TypeReference<List<PostgresCourse>>(){});
             List<RedisCourse> pCourses = Utils.convertFromPostgresCourseToRedisCourseList(postgresCourses);
              */
-            List<RedisCourse> combinedList =  Stream.of(mCourses, nCourses, pCourses).flatMap(Collection::stream).collect(Collectors.toList());
+            List<RedisCourse> combinedList =  Stream.of(mCourses, nCourses).flatMap(Collection::stream).collect(Collectors.toList());
             procedure.set(query, om.writeValueAsString(combinedList));
             procedure.expire(query, 300);
             procedure.exec();
